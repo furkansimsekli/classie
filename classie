@@ -1,0 +1,31 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ]; then
+    echo -e "Usage: classie MEETING_NAME [zoom_web]"
+    echo -e "    MEETING_NAME: The name of the meeting to join, as defined in the ~/.meetings file."
+    echo -e "    zw: Optional argument to open Zoom meetings in the web browser instead of the Zoom app."
+    exit 0
+elif [ "$1" == "--hucs" ]; then
+    base64 -d < "./.meetings.encoded" > "$HOME/.meetings"
+    exit 0
+fi
+
+if [ ! -f "$HOME/.meetings.encoded" ]; then
+    cp "./.meetings.encoded" "$HOME"
+fi
+
+if [ ! -f "$HOME/.meetings" ]; then
+    base64 -d < "$HOME/.meetings.encoded" > "$HOME/.meetings"
+fi
+
+meeting_name="$1"
+meeting_url="$(grep "^$meeting_name" ~/.meetings | cut -d' ' -f2)"
+
+if [ -z "$meeting_url" ]; then
+    echo "Error: Meeting name "$meeting_name" not found in .meetings file"
+elif [ "$2" == "zw" ]; then
+    meeting_url="$(echo "$meeting_url" | sed 's|j/|wc/join/|g')"
+    xdg-open "$meeting_url"
+else
+    xdg-open "$meeting_url"
+fi
