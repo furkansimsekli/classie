@@ -13,6 +13,10 @@ if [ "$1" == "--help" ] || [ $# == 0 ]; then
 elif [ "$1" == "--hucs" ]; then
     base64 -d < "$ENCODED_MEETINGS_FILE" > "$MEETINGS_FILE"
     exit 0
+elif [ "$1" == "--init" ]; then
+    touch "$MEETINGS_FILE"
+    echo "meetings file has been created at "$MEETINGS_FILE""
+    exit 0
 fi
 
 OS="$(uname)"

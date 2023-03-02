@@ -4,7 +4,7 @@ Sometimes I become a miserable person while looking for the meeting url on the e
 ## How To
 0. Download the repository
 1. Give executing permission to classie with `chmod +x classie`
-2. Prepare a .meetings file at home directory with given format.
+2. Initialize the config file (meetings) at the `.config/classie` with `./classie --init`
 3. Run with `./classie <meeting name>`
 
 Example .meetings file
