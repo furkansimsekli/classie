@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$1" == "--help" ]; then
+if [ "$1" == "--help" ] || [ $# == 0 ]; then
     echo -e "Usage: classie MEETING_NAME [zw]"
     echo -e "    MEETING_NAME: The name of the meeting to join, as defined in the ~/.meetings file."
     echo -e "    zw: Optional argument to open Zoom meetings in the web browser instead of the Zoom app."
