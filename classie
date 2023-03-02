@@ -1,31 +1,65 @@
 #!/bin/bash
 
-if [ "$1" == "--help" ]; then
+ENCODED_MEETINGS_FILE="$(dirname $BASH_SOURCE)/meetings.base64"
+XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+MEETINGS_FILE="$XDG_CONFIG_HOME/classie/meetings"
+mkdir -p "$XDG_CONFIG_HOME/classie"
+
+if [ "$1" == "--help" ] || [ $# == 0 ]; then
     echo -e "Usage: classie MEETING_NAME [zw]"
     echo -e "    MEETING_NAME: The name of the meeting to join, as defined in the ~/.meetings file."
     echo -e "    zw: Optional argument to open Zoom meetings in the web browser instead of the Zoom app."
     exit 0
 elif [ "$1" == "--hucs" ]; then
-    base64 -d < "./.meetings.encoded" > "$HOME/.meetings"
+    base64 -d < "$ENCODED_MEETINGS_FILE" > "$MEETINGS_FILE"
     exit 0
 fi
 
-if [ ! -f "$HOME/.meetings.encoded" ]; then
-    cp "./.meetings.encoded" "$HOME"
-fi
+OS="$(uname)"
 
-if [ ! -f "$HOME/.meetings" ]; then
-    base64 -d < "$HOME/.meetings.encoded" > "$HOME/.meetings"
+HAS_APP=0
+case "$OS" in
+    "Linux")
+        if command -v zoom > /dev/null; then
+            HAS_APP=1
+        fi
+
+        RUN_COMMAND="xdg-open"
+        ;;
+    "Darwin")
+        if [ -d "/Applications/Zoom.app" ]; then
+            HAS_APP=1
+        fi
+
+        # Zoom does not seem to work well in Safari, try other browsers first.
+        PREFERRED_BROWSER="${PREFERRED_BROWSER:-Firefox}"
+        if [ ! -d "/Applications/$PREFERRED_BROWSER.app" ]; then
+            PREFERRED_BROWSER="Google Chrome"
+        fi
+        if [ ! -d "/Applications/$PREFERRED_BROWSER.app" ]; then
+            PREFERRED_BROWSER="Safari"
+        fi
+
+        RUN_COMMAND="open -a $PREFERRED_BROWSER"
+        ;;
+    *)
+        echo "Unsupported OS: $OS"
+        exit 1
+        ;;
+esac
+
+if [ ! -f "$MEETINGS_FILE" ]; then
+    base64 -d < "$ENCODED_MEETINGS_FILE" > "$MEETINGS_FILE"
 fi
 
 meeting_name="$1"
-meeting_url="$(grep "^$meeting_name" ~/.meetings | cut -d' ' -f2)"
+meeting_url="$(grep -i "^$meeting_name" "$MEETINGS_FILE" | cut -d' ' -f2)"
 
 if [ -z "$meeting_url" ]; then
     echo "Error: Meeting name "$meeting_name" not found in .meetings file"
-elif [ "$2" == "zw" ]; then
+elif [ "$2" == "zw" ] || [ $HAS_APP == 0 ]; then
     meeting_url="$(echo "$meeting_url" | sed 's|j/|wc/join/|g')"
-    xdg-open "$meeting_url"
+    $RUN_COMMAND "$meeting_url"
 else
-    xdg-open "$meeting_url"
+    $RUN_COMMAND "$meeting_url"
 fi
