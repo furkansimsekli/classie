@@ -10,6 +10,39 @@ elif [ "$1" == "--hucs" ]; then
     exit 0
 fi
 
+OS="$(uname)"
+
+HAS_APP=0
+case "$OS" in
+    "Linux")
+        if command -v zoom > /dev/null; then
+            HAS_APP=1
+        fi
+
+        RUN_COMMAND="xdg-open"
+        ;;
+    "Darwin")
+        if [ -d "/Applications/Zoom.app" ]; then
+            HAS_APP=1
+        fi
+
+        # Zoom does not seem to work well in Safari, try other browsers first.
+        PREFERRED_BROWSER="${PREFERRED_BROWSER:-Firefox}"
+        if [ ! -d "/Applications/$PREFERRED_BROWSER.app" ]; then
+            PREFERRED_BROWSER="Google Chrome"
+        fi
+        if [ ! -d "/Applications/$PREFERRED_BROWSER.app" ]; then
+            PREFERRED_BROWSER="Safari"
+        fi
+
+        RUN_COMMAND="open -a $PREFERRED_BROWSER"
+        ;;
+    *)
+        echo "Unsupported OS: $OS"
+        exit 1
+        ;;
+esac
+
 if [ ! -f "$HOME/.meetings.encoded" ]; then
     cp "./.meetings.encoded" "$HOME"
 fi
@@ -23,9 +56,9 @@ meeting_url="$(grep "^$meeting_name" ~/.meetings | cut -d' ' -f2)"
 
 if [ -z "$meeting_url" ]; then
     echo "Error: Meeting name "$meeting_name" not found in .meetings file"
-elif [ "$2" == "zw" ]; then
+elif [ "$2" == "zw" ] || [ $HAS_APP == 0 ]; then
     meeting_url="$(echo "$meeting_url" | sed 's|j/|wc/join/|g')"
-    xdg-open "$meeting_url"
+    $RUN_COMMAND "$meeting_url"
 else
-    xdg-open "$meeting_url"
+    $RUN_COMMAND "$meeting_url"
 fi
