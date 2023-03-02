@@ -1,12 +1,16 @@
 #!/bin/bash
 
+ENCODED_MEETINGS_FILE="$(dirname $BASH_SOURCE)/.meetings.encoded"
+XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+mkdir -p "$XDG_CONFIG_HOME/classie"
+
 if [ "$1" == "--help" ] || [ $# == 0 ]; then
     echo -e "Usage: classie MEETING_NAME [zw]"
     echo -e "    MEETING_NAME: The name of the meeting to join, as defined in the ~/.meetings file."
     echo -e "    zw: Optional argument to open Zoom meetings in the web browser instead of the Zoom app."
     exit 0
 elif [ "$1" == "--hucs" ]; then
-    base64 -d < "./.meetings.encoded" > "$HOME/.meetings"
+    base64 -d < "$ENCODED_MEETINGS_FILE" > "$XDG_CONFIG_HOME/classie/.meetings"
     exit 0
 fi
 
@@ -43,16 +47,12 @@ case "$OS" in
         ;;
 esac
 
-if [ ! -f "$HOME/.meetings.encoded" ]; then
-    cp "./.meetings.encoded" "$HOME"
-fi
-
-if [ ! -f "$HOME/.meetings" ]; then
-    base64 -d < "$HOME/.meetings.encoded" > "$HOME/.meetings"
+if [ ! -f "$XDG_CONFIG_HOME/classie/.meetings" ]; then
+    base64 -d < "$ENCODED_MEETINGS_FILE" > "$XDG_CONFIG_HOME/classie/.meetings"
 fi
 
 meeting_name="$1"
-meeting_url="$(grep "^$meeting_name" ~/.meetings | cut -d' ' -f2)"
+meeting_url="$(grep "^$meeting_name" "$XDG_CONFIG_HOME/classie/.meetings" | cut -d' ' -f2)"
 
 if [ -z "$meeting_url" ]; then
     echo "Error: Meeting name "$meeting_name" not found in .meetings file"
