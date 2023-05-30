@@ -24,7 +24,7 @@ OS="$(uname)"
 HAS_APP=0
 case "$OS" in
     "Linux")
-        if command -v zoom > /dev/null; then
+        if [ ! -z $(xdg-mime query default x-scheme-handler/zoommtg 2> /dev/null) ]; then
             HAS_APP=1
         fi
 
@@ -59,11 +59,20 @@ fi
 meeting_name="$1"
 meeting_url="$(grep -i "^$meeting_name" "$MEETINGS_FILE" | cut -d' ' -f2)"
 
+https_to_zoommtg() {
+    # $1 = https url
+    # Prints the meeting url in zoommtg scheme if $1 belongs to a Zoom meeting, otherwise prints the input as is.
+    perl -ne '/http[s]?:\/\/[A-Za-z0-9\-]*[\.]?zoom\.us\/j\/([0-9]+)(?:(?=\?pwd=)\?pwd=([A-Za-z0-9\.\-\_]+)&?)?/ ? print "zoommtg://zoom.us/join?action=join&confno=$1&pwd=$2\n" : print $_' <<< $1
+}
+
 if [ -z "$meeting_url" ]; then
     echo "Error: Meeting name "$meeting_name" not found in .meetings file"
 elif [ "$2" == "zw" ] || [ $HAS_APP == 0 ]; then
     meeting_url="$(echo "$meeting_url" | sed 's|j/|wc/join/|g')"
     $RUN_COMMAND "$meeting_url"
 else
+    # If we're working with a Zoom url, convert it into the zoommtg url scheme
+    meeting_url=$(https_to_zoommtg $meeting_url)
+
     $RUN_COMMAND "$meeting_url"
 fi
