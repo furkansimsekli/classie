@@ -24,7 +24,7 @@ OS="$(uname)"
 HAS_APP=0
 case "$OS" in
     "Linux")
-        if command -v zoom > /dev/null; then
+        if [ ! -z $(xdg-mime query default x-scheme-handler/zoommtg 2> /dev/null) ]; then
             HAS_APP=1
         fi
 
